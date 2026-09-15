@@ -202,10 +202,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await loadUserLogos(cred.user.uid);
     } catch (err: any) {
       console.error('Google Sign In error:', err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setAuthError('Connexion Google interrompue ou refusée.');
+      let errorMsg = 'La connexion avec Google a échoué.';
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'votre domaine';
+      if (err?.code === 'auth/unauthorized-domain') {
+        errorMsg = `Le domaine (${currentHost}) n'est pas encore ajouté aux « Domaines autorisés » dans Firebase. En attendant, connectez-vous directement via l'e-mail ci-dessous.`;
+      } else if (err?.code === 'auth/popup-blocked') {
+        errorMsg = 'La popup Google a été bloquée par le navigateur mobile. Utilisez l\'e-mail ci-dessous.';
+      } else if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        errorMsg = 'La fenêtre de connexion Google a été fermée. Vous pouvez réessayer ou utiliser l\'e-mail.';
+      } else if (err?.code === 'auth/operation-not-allowed') {
+        errorMsg = 'Le fournisseur Google n\'est pas actif dans Firebase. Utilisez l\'e-mail ci-dessous.';
+      } else if (err?.message) {
+        errorMsg = `Erreur Google (${err.code || 'OAuth'}) : ${err.message}`;
       }
-      throw err;
+      setAuthError(errorMsg);
+      throw new Error(errorMsg);
     }
   };
 

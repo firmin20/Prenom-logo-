@@ -104,22 +104,21 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
       await signInGoogle();
       onSuccess('logged_in');
     } catch (err: any) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setLocalError('Connexion avec Google interrompue. Veuillez réessayer.');
-      }
+      const msg = err?.message || 'Connexion avec Google interrompue. Veuillez réessayer ou utiliser l\'e-mail ci-dessous.';
+      setLocalError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md rounded-3xl bg-[#090D17] border border-white/[0.12] shadow-[0_25px_60px_rgba(0,0,0,0.8)] overflow-hidden text-slate-200 flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-md my-auto max-h-[95vh] rounded-3xl bg-[#090D17] border border-white/[0.12] shadow-[0_25px_60px_rgba(0,0,0,0.8)] overflow-y-auto text-slate-200 flex flex-col">
         {/* Background glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <div className="flex items-center justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-1 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold font-cinzel text-sm">
               P
@@ -141,7 +140,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
 
         {/* Notice Message if redirected from restricted page */}
         {noticeMessage && (
-          <div className="mx-6 mt-3 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
+          <div className="mx-5 sm:mx-6 mt-3 px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
             <span>{noticeMessage}</span>
           </div>
@@ -149,19 +148,24 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
 
         {/* Error notification */}
         {(localError || authError) && (
-          <div className="mx-6 mt-3 px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-            <span>{localError || authError}</span>
+          <div className="mx-5 sm:mx-6 mt-3 px-3.5 py-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-200 text-xs flex flex-col gap-1.5 animate-fade-in">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
+              <span className="leading-relaxed">{localError || authError}</span>
+            </div>
+            <span className="text-[11px] text-amber-300 font-medium pl-6">
+              👉 Remplissez simplement le formulaire e-mail ci-dessous pour continuer instantanément.
+            </span>
           </div>
         )}
 
         {/* Main Content Area */}
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-5 sm:p-7 space-y-5">
           {/* Header titles */}
-          <div className="text-left space-y-1.5">
+          <div className="text-left space-y-1">
             {initialMode === 'register' && (
               <>
-                <h2 className="text-2xl font-black text-white font-outfit tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-white font-outfit tracking-tight">
                   Créez votre compte
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -172,7 +176,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
 
             {initialMode === 'login' && (
               <>
-                <h2 className="text-2xl font-black text-white font-outfit tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-white font-outfit tracking-tight">
                   Bienvenue à nouveau
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -183,7 +187,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
 
             {initialMode === 'forgot' && (
               <>
-                <h2 className="text-2xl font-black text-white font-outfit tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-white font-outfit tracking-tight">
                   Mot de passe oublié
                 </h2>
                 <p className="text-xs text-slate-400">
@@ -202,7 +206,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-white text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer disabled:opacity-50"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
