@@ -1,0 +1,7 @@
+{
+  "name": "PRÉNOM LOGO AI",
+  "description": "Générateur de logos professionnels et mémorables basés sur l'analyse de votre prénom. Un prénom. Une identité. Un logo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

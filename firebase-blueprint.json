@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil utilisateur et abonnement SaaS",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Identifiant unique Firebase Auth de l'utilisateur"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Prénom de l'utilisateur"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Nom de famille de l'utilisateur"
+        },
+        "email": {
+          "type": "string",
+          "description": "Adresse email de l'utilisateur"
+        },
+        "plan": {
+          "type": "string",
+          "description": "Plan actuel (ex: free, pro)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date de création du compte format ISO"
+        }
+      },
+      "required": ["userId", "firstName", "email", "createdAt"]
+    },
+    "SavedLogo": {
+      "title": "SavedLogo",
+      "description": "Logo généré et sauvegardé par l'utilisateur",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du logo"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Identifiant du propriétaire créateur"
+        },
+        "brandName": {
+          "type": "string",
+          "description": "Prénom ou marque du logo"
+        },
+        "activity": {
+          "type": "string",
+          "description": "Activité ou secteur renseigné"
+        },
+        "slogan": {
+          "type": "string",
+          "description": "Slogan du logo"
+        },
+        "conceptType": {
+          "type": "string",
+          "description": "Type de concept graphique"
+        },
+        "style": {
+          "type": "string",
+          "description": "Style esthétique"
+        },
+        "conceptNumber": {
+          "type": "number",
+          "description": "Numéro du concept"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Explication de la direction artistique"
+        },
+        "colors": {
+          "type": "object",
+          "description": "Palette chromatique du logo"
+        },
+        "typography": {
+          "type": "object",
+          "description": "Spécifications typographiques"
+        },
+        "recommendedUsage": {
+          "type": "array",
+          "description": "Recommandations de supports"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Horodatage de création"
+        }
+      },
+      "required": ["id", "userId", "brandName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Données de profil privé de l'utilisateur"
+    },
+    "/users/{userId}/logos/{logoId}": {
+      "schema": "SavedLogo",
+      "description": "Logos personnels créés et sauvegardés par l'utilisateur"
+    }
+  }
+}
