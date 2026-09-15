@@ -57,7 +57,7 @@ export interface LetterAnalysis {
 }
 
 export interface VectorSymbolData {
-  type: 'monogram' | 'geometric' | 'abstract' | 'crest' | 'interlocking' | 'path';
+  type: 'monogram' | 'geometric' | 'abstract' | 'crest' | 'interlocking' | 'path' | 'circular_badge' | 'sketch_vector';
   pathData?: string;
   shapes?: Array<{
     type: 'rect' | 'circle' | 'path' | 'polygon' | 'line';
@@ -67,6 +67,7 @@ export interface VectorSymbolData {
   symbolAccent?: string;
   viewBox?: string;
   strokeWidth?: number;
+  customSvgContent?: string;
 }
 
 export interface LogoConcept {
@@ -104,6 +105,48 @@ export interface LogoConcept {
   };
   aiImageUrl?: string;
   brandKit?: BrandKitData;
+  source?: 'name' | 'sketch';
+  originalSketch?: string;
+  sketchMode?: 'fidele' | 'reinterpretation';
+  phoneNumber?: string;
+  circularBadgeText?: string;
+}
+
+export interface SketchAnalysisResult {
+  rawSummary: string;
+  compositionType: 'circular' | 'emblem' | 'horizontal' | 'stacked' | 'monogram' | 'geometric_icon';
+  detectedText: {
+    brandName?: string;
+    brandNameConfidence?: number;
+    slogan?: string;
+    sloganConfidence?: number;
+    phoneNumber?: string;
+    phoneConfidence?: number;
+    secondaryText?: string;
+    secondaryConfidence?: number;
+    uncertainWords?: string[];
+  };
+  detectedSymbols: string[];
+  dominantColors: string[];
+  styleSuggestion: LogoStyle;
+  intentionalElements: string[];
+  discardedNoise: string[];
+  creativeNotes: string;
+}
+
+export interface SketchGenerationPayload {
+  sketchImage: string;
+  analysis?: SketchAnalysisResult;
+  confirmedInfo: {
+    brandName: string;
+    activity?: string;
+    slogan?: string;
+    phoneNumber?: string;
+  };
+  generationMode: 'fidele' | 'reinterpretation';
+  style: LogoStyle;
+  colorHandling: 'preserve' | 'custom';
+  customColor: ColorSchemeId;
 }
 
 export interface BrandKitData {
@@ -181,11 +224,15 @@ export interface SavedLogoItem {
   concept: LogoConcept;
   createdAt: string;
   notes?: string;
+  source?: 'name' | 'sketch';
+  originalSketch?: string;
+  sketchAnalysis?: SketchAnalysisResult;
 }
 
 export type AppView =
   | 'home'
   | 'app'
+  | 'sketch'
   | 'my-logos'
   | 'account'
   | 'subscription'

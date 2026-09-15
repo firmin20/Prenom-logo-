@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Dashboard3DAccent } from '../three/Dashboard3DAccent';
 
 interface AuthViewProps {
   initialMode?: 'login' | 'register' | 'forgot';
@@ -120,8 +121,8 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
         {/* Header Bar */}
         <div className="flex items-center justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-1 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold font-cinzel text-sm">
-              P
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold font-cinzel text-sm relative overflow-hidden">
+              <Dashboard3DAccent size={32} />
             </div>
             <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
               PRÉNOM LOGO AI

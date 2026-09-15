@@ -26,6 +26,11 @@ import {
 } from 'lucide-react';
 import { LogoRenderer } from './LogoRenderer';
 import { createProceduralConcepts } from '../utils/logoEngine';
+import { Hero3DLogo } from './three/Hero3DLogo';
+import { Background3DCanvas } from './three/Background3DCanvas';
+import { LetterMorphAnimation } from './three/LetterMorphAnimation';
+import { Card3DTilt } from './three/Card3DTilt';
+import { ThreeDName, ThreeDNameMaterial, TransformationPhase } from './three/ThreeDName';
 
 interface PublicLandingPageProps {
   onStartSignUp: () => void;
@@ -42,6 +47,11 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   onOpenPrivacy,
   onOpenContact,
 }) => {
+  // Interactive Hero 3D Name State
+  const [heroInputName, setHeroInputName] = useState('FIRMIN');
+  const [heroMaterial, setHeroMaterial] = useState<ThreeDNameMaterial>('LUXURY');
+  const [heroColor, setHeroColor] = useState('noir_or');
+
   // Pre-generate rich demonstration logos for FIRMIN, NOVA, ELYA, MAVEN, KAM'S
   const demoGallery = React.useMemo(() => {
     return [
@@ -225,6 +235,167 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             <p className="text-xs sm:text-sm text-slate-400 font-medium pt-2">
               Création rapide • Plusieurs concepts • Personnalisation par IA
             </p>
+          </div>
+
+          {/* ===================================================
+              HERO 3D TYPOGRAPHIC SHOWCASE
+              "YOUR NAME IS THE MATERIAL OF YOUR BRAND"
+             =================================================== */}
+          <div className="mt-12 sm:mt-16 max-w-5xl mx-auto">
+            <div className="relative rounded-3xl bg-gradient-to-b from-[#0E1322]/95 to-[#080B14]/95 border border-amber-500/25 p-6 sm:p-10 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+              {/* Glowing decorative light */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-amber-500/15 rounded-full blur-3xl pointer-events-none -z-10" />
+
+              {/* Showcase Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-white/[0.08] gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400 font-mono">
+                      Expérience 3D Interactive
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white font-outfit">
+                    Votre prénom est la matière de votre marque.
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-mono">
+                    Rotation 3D • Reflets réels • 6 phases
+                  </span>
+                </div>
+              </div>
+
+              {/* Central 3D Typography Canvas */}
+              <div className="py-4 relative">
+                <ThreeDName
+                  name={heroInputName}
+                  material={heroMaterial}
+                  color={heroColor}
+                  height={300}
+                  scale={1.0}
+                  interactive={true}
+                  phase="auto_loop"
+                  animationSpeed={1.0}
+                  showPhaseIndicator={true}
+                />
+              </div>
+
+              {/* Live Interactive Customization Deck */}
+              <div className="mt-6 pt-6 border-t border-white/[0.08] grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                {/* 1. Name Input */}
+                <div className="md:col-span-5 space-y-2">
+                  <label htmlFor="hero-name-input" className="block text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">
+                    Entrez votre prénom :
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="hero-name-input"
+                      type="text"
+                      maxLength={14}
+                      value={heroInputName}
+                      onChange={(e) => setHeroInputName(e.target.value.toUpperCase())}
+                      placeholder="FIRMIN"
+                      className="w-full px-4 py-3 rounded-xl bg-[#070912] border border-amber-500/30 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 text-white font-bold tracking-wider text-base sm:text-lg outline-none transition-all"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500">
+                      3D DIRECT
+                    </span>
+                  </div>
+
+                  {/* Quick Preset Names */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span className="text-[10px] text-slate-500 font-mono">Exemples :</span>
+                    {['FIRMIN', 'JONATHAN', 'ELYA', 'NOVA', 'AMINE', 'SARAH'].map((sample) => (
+                      <button
+                        key={sample}
+                        onClick={() => setHeroInputName(sample)}
+                        className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold transition-all cursor-pointer ${
+                          heroInputName === sample
+                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                            : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {sample}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Material & Color Selector */}
+                <div className="md:col-span-7 space-y-3">
+                  {/* Material Switcher */}
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-400 font-mono uppercase tracking-wider mb-1.5">
+                      Matière 3D :
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        'MINIMAL',
+                        'PREMIUM',
+                        'LUXURY',
+                        'MODERN',
+                        'TECHNOLOGY',
+                        'CREATIVE',
+                        'BUSINESS',
+                        'SIGNATURE',
+                      ].map((mat) => (
+                        <button
+                          key={mat}
+                          onClick={() => setHeroMaterial(mat as ThreeDNameMaterial)}
+                          className={`text-[10px] px-2.5 py-1 rounded-lg font-bold font-mono transition-all cursor-pointer ${
+                            heroMaterial === mat
+                              ? 'bg-amber-400 text-slate-950 shadow-sm ring-1 ring-amber-300'
+                              : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {mat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Color Selector */}
+                  <div className="flex items-center justify-between gap-4 pt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-400 font-mono uppercase tracking-wider">
+                        Couleur :
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {[
+                          { id: 'noir_or', label: 'Or', hex: '#f59e0b' },
+                          { id: 'bleu', label: 'Bleu', hex: '#38bdf8' },
+                          { id: 'vert', label: 'Émeraude', hex: '#10b981' },
+                          { id: 'pourpre', label: 'Pourpre', hex: '#a855f7' },
+                          { id: 'monochrome', label: 'Monochrome', hex: '#e2e8f0' },
+                        ].map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => setHeroColor(c.id)}
+                            title={c.label}
+                            className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
+                              heroColor === c.id
+                                ? 'ring-2 ring-white scale-110 border-white'
+                                : 'border-white/20 opacity-70 hover:opacity-100'
+                            }`}
+                            style={{ backgroundColor: c.hex }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={onStartSignUp}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs tracking-wider uppercase shadow-[0_0_20px_rgba(245,158,11,0.25)] transition-all cursor-pointer shrink-0"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Créer ce logo</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Hero Visual Card (Exemple Firmin) */}
@@ -424,8 +595,8 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               },
               {
                 num: '03',
-                title: "L'IA crée vos concepts",
-                desc: 'En quelques secondes, découvrez 4 propositions de logos originales et percutantes.',
+                title: "L'IA crée votre logo",
+                desc: 'En quelques secondes, découvrez 4 propositions de logos originales, équilibrées et percutantes.',
                 color: 'text-purple-400',
               },
               {
@@ -435,24 +606,24 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                 color: 'text-emerald-400',
               },
             ].map((step, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl bg-[#0D1220] border border-white/[0.08] p-6 flex flex-col justify-between hover:border-white/[0.18] transition-all group"
-              >
-                <div>
-                  <span className={`text-3xl font-black font-mono ${step.color} block mb-4`}>
-                    {step.num}
-                  </span>
-                  <h3 className="text-base font-bold text-white font-outfit mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {step.desc}
-                  </p>
+              <Card3DTilt key={idx} maxTilt={8}>
+                <div className="rounded-2xl bg-[#0D1220] border border-white/[0.08] p-6 flex flex-col justify-between hover:border-amber-500/30 transition-all group h-full shadow-lg">
+                  <div>
+                    <span className={`text-3xl font-black font-mono ${step.color} block mb-4`}>
+                      {step.num}
+                    </span>
+                    <h3 className="text-base font-bold text-white font-outfit mb-2">
+                      {step.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {step.desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </Card3DTilt>
             ))}
           </div>
+
         </div>
       </section>
 

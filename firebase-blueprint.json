@@ -85,6 +85,18 @@
           "type": "array",
           "description": "Recommandations de supports"
         },
+        "source": {
+          "type": "string",
+          "description": "Mode de création : 'name' ou 'sketch'"
+        },
+        "originalSketch": {
+          "type": "string",
+          "description": "Image du croquis original (base64 ou URL)"
+        },
+        "sketchAnalysis": {
+          "type": "object",
+          "description": "Métadonnées et résultats d'analyse du croquis"
+        },
         "createdAt": {
           "type": "string",
           "description": "Horodatage de création"

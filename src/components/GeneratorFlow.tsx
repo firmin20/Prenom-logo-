@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, ArrowLeft, Check, Palette, Sparkle, AlertCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Palette, Sparkle, AlertCircle, Eye } from 'lucide-react';
 import { ColorSchemeId, LogoStyle } from '../types';
 import { STYLES, COLOR_SCHEMES } from '../data/presets';
+import { ThreeDName } from './three/ThreeDName';
 
 interface GeneratorFlowProps {
   initialName?: string;
@@ -156,6 +157,45 @@ export const GeneratorFlow: React.FC<GeneratorFlowProps> = ({
 
         {/* Form Container */}
         <div className="rounded-3xl bg-[#0C101A]/90 border border-white/[0.1] p-6 sm:p-10 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6)]">
+          {/* Live 3D Name Preview Stage */}
+          <div className="mb-8 rounded-2xl bg-[#070A12] border border-white/[0.08] p-4 relative overflow-hidden">
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] mb-2 px-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Aperçu 3D Interactif en temps réel</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-[10px] font-mono">
+                <span className="px-2 py-0.5 rounded bg-white/[0.06] text-amber-300">
+                  Matière : {selectedStyle}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-white/[0.06] text-slate-300 hidden sm:inline">
+                  Couleur : {selectedColor}
+                </span>
+              </div>
+            </div>
+
+            <ThreeDName
+              name={firstName.trim() || 'FIRMIN'}
+              material={selectedStyle}
+              color={selectedColor}
+              height={180}
+              scale={0.9}
+              interactive={true}
+              phase="auto_loop"
+              animationSpeed={1.0}
+            />
+
+            <div className="text-center mt-1">
+              <span className="text-[10px] text-slate-500 font-mono">
+                ✦ Glissez ou survolez avec le curseur pour explorer la profondeur et les reflets
+              </span>
+            </div>
+          </div>
+
           {/* STEP 1: ENTER YOUR NAME */}
           {currentStep === 1 && (
             <form onSubmit={handleNextFromStep1} className="space-y-8">
