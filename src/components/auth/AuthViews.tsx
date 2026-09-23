@@ -202,7 +202,24 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
               <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
               <span className="leading-relaxed">{localError || authError}</span>
             </div>
-            {(localError || authError)?.includes('Google') && (
+            {(localError || authError)?.includes('autorisé') && (
+              <div className="pl-6 pt-1 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-amber-300 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                    prenomlogo.vercel.app
+                  </span>
+                  <a
+                    href="https://console.firebase.google.com/project/balmy-mix-5q6d2/authentication/settings"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] underline text-amber-400 hover:text-amber-300 font-semibold"
+                  >
+                    Ouvrir Firebase Console ↗
+                  </a>
+                </div>
+              </div>
+            )}
+            {(localError || authError)?.includes('Google') && !(localError || authError)?.includes('autorisé') && (
               <span className="text-[11px] text-amber-300 font-medium pl-6">
                 👉 Vous pouvez utiliser l'inscription / connexion par e-mail directement ci-dessous.
               </span>
