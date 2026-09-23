@@ -24,14 +24,14 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId) && isValidId(userId);
-      allow update: if isOwner(userId) && incoming().userId == existing().userId;
+      allow update: if isOwner(userId) && (!('userId' in incoming()) || incoming().userId == existing().userId);
       allow delete: if isOwner(userId);
 
       // User saved logos subcollection
       match /logos/{logoId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(logoId);
-        allow update: if isOwner(userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && (!('userId' in incoming()) || incoming().userId == existing().userId);
         allow delete: if isOwner(userId);
       }
     }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, AlertCircle, CheckCircle2, X, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Dashboard3DAccent } from '../three/Dashboard3DAccent';
+import { isValidEmail } from '../../utils/authErrors';
 
 interface AuthViewProps {
   initialMode?: 'login' | 'register' | 'forgot';
@@ -28,39 +29,79 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
 
+  const clearErrors = () => {
+    if (localError) setLocalError(null);
+    if (authError) clearAuthError();
+  };
+
+  const handleModeSwitch = (mode: 'login' | 'register' | 'forgot') => {
+    clearErrors();
+    setResetSuccessMessage(null);
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    onSwitchMode(mode);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
-    clearAuthError();
+    clearErrors();
 
     if (initialMode === 'register') {
+      // 1. Prénom présent
       if (!firstName.trim()) {
         setLocalError('Veuillez renseigner votre prénom.');
         return;
       }
-      if (!email.trim() || !password) {
-        setLocalError('Veuillez renseigner tous les champs obligatoires.');
+
+      // 2. E-mail valide
+      if (!email.trim()) {
+        setLocalError('Veuillez renseigner votre adresse e-mail.');
+        return;
+      }
+      if (!isValidEmail(email)) {
+        setLocalError("L'adresse e-mail n'est pas valide (ex: contact@exemple.com).");
+        return;
+      }
+
+      // 3. Mot de passe suffisamment sécurisé
+      if (!password) {
+        setLocalError('Veuillez renseigner un mot de passe.');
         return;
       }
       if (password.length < 6) {
         setLocalError('Le mot de passe doit comporter au moins 6 caractères.');
         return;
       }
+
+      // 4. Confirmation présente
+      if (!confirmPassword) {
+        setLocalError('Veuillez confirmer votre mot de passe.');
+        return;
+      }
+
+      // 5. password === confirmPassword (exact strict comparison)
       if (password !== confirmPassword) {
         setLocalError('Les mots de passe ne correspondent pas.');
         return;
       }
 
+      // Only after all validations pass: Call Firebase Authentication
       setLoading(true);
       try {
         await signUpWithEmail(firstName.trim(), lastName.trim(), email.trim(), password);
         onSuccess('registered');
       } catch (err: any) {
-        setLocalError(err.message || "Erreur lors de l'inscription");
+        setLocalError(err.message || "Erreur lors de la création de compte.");
       } finally {
         setLoading(false);
       }
@@ -69,13 +110,17 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
         setLocalError('Veuillez renseigner votre e-mail et votre mot de passe.');
         return;
       }
+      if (!isValidEmail(email)) {
+        setLocalError("L'adresse e-mail n'est pas valide.");
+        return;
+      }
 
       setLoading(true);
       try {
         await signInWithEmail(email.trim(), password);
         onSuccess('logged_in');
       } catch (err: any) {
-        setLocalError(err.message || 'Identifiants invalides');
+        setLocalError(err.message || 'Identifiants invalides.');
       } finally {
         setLoading(false);
       }
@@ -84,13 +129,17 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
         setLocalError('Veuillez renseigner votre adresse e-mail.');
         return;
       }
+      if (!isValidEmail(email)) {
+        setLocalError("L'adresse e-mail n'est pas valide.");
+        return;
+      }
 
       setLoading(true);
       try {
         await sendPasswordReset(email.trim());
         setResetSuccessMessage('Un lien de réinitialisation vous a été envoyé par e-mail.');
       } catch (err: any) {
-        setLocalError(err.message || 'Erreur lors de la réinitialisation');
+        setLocalError(err.message || 'Erreur lors de la réinitialisation.');
       } finally {
         setLoading(false);
       }
@@ -98,14 +147,13 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
   };
 
   const handleGoogleAuth = async () => {
-    setLocalError(null);
-    clearAuthError();
+    clearErrors();
     setLoading(true);
     try {
       await signInGoogle();
       onSuccess('logged_in');
     } catch (err: any) {
-      const msg = err?.message || 'Connexion avec Google interrompue. Veuillez réessayer ou utiliser l\'e-mail ci-dessous.';
+      const msg = err?.message || "La connexion Google n'a pas pu aboutir. Utilisez le formulaire e-mail ci-dessous.";
       setLocalError(msg);
     } finally {
       setLoading(false);
@@ -154,9 +202,11 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
               <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
               <span className="leading-relaxed">{localError || authError}</span>
             </div>
-            <span className="text-[11px] text-amber-300 font-medium pl-6">
-              👉 Remplissez simplement le formulaire e-mail ci-dessous pour continuer instantanément.
-            </span>
+            {(localError || authError)?.includes('Google') && (
+              <span className="text-[11px] text-amber-300 font-medium pl-6">
+                👉 Vous pouvez utiliser l'inscription / connexion par e-mail directement ci-dessous.
+              </span>
+            )}
           </div>
         )}
 
@@ -207,24 +257,28 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-white text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer disabled:opacity-50"
               >
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                )}
                 <span>Continuer avec Google</span>
               </button>
 
@@ -246,10 +300,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
               <p className="text-xs text-slate-300">{resetSuccessMessage}</p>
               <button
                 type="button"
-                onClick={() => {
-                  setResetSuccessMessage(null);
-                  onSwitchMode('login');
-                }}
+                onClick={() => handleModeSwitch('login')}
                 className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer"
               >
                 Retour à la connexion
@@ -270,7 +321,10 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                         type="text"
                         required
                         value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
+                        onChange={(e) => {
+                          setFirstName(e.target.value);
+                          clearErrors();
+                        }}
                         placeholder="Votre prénom"
                         className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
                       />
@@ -284,7 +338,10 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                     <input
                       type="text"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        clearErrors();
+                      }}
                       placeholder="Votre nom"
                       className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
                     />
@@ -303,7 +360,10 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      clearErrors();
+                    }}
                     placeholder="nom@domaine.com"
                     className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
                   />
@@ -320,7 +380,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                     {initialMode === 'login' && (
                       <button
                         type="button"
-                        onClick={() => onSwitchMode('forgot')}
+                        onClick={() => handleModeSwitch('forgot')}
                         className="text-[10px] text-amber-400/90 hover:text-amber-300 transition-colors cursor-pointer"
                       >
                         Mot de passe oublié ?
@@ -328,15 +388,27 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        clearErrors();
+                      }}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
+                      className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
                     />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
+                      aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               )}
@@ -348,16 +420,45 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                     Confirmation du mot de passe <span className="text-amber-400">*</span>
                   </label>
                   <div className="relative">
-                    <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       required
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        clearErrors();
+                      }}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
+                      className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
                     />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
+                      aria-label={showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
+
+                  {/* Immediate visual confirmation */}
+                  {confirmPassword.length > 0 && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] animate-fade-in">
+                      {password === confirmPassword ? (
+                        <span className="text-emerald-400 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          Les mots de passe correspondent parfaitement
+                        </span>
+                      ) : (
+                        <span className="text-amber-400/90 font-medium flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          Les mots de passe ne correspondent pas encore
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -392,7 +493,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                 Déjà un compte ?{' '}
                 <button
                   type="button"
-                  onClick={() => onSwitchMode('login')}
+                  onClick={() => handleModeSwitch('login')}
                   className="font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer ml-1"
                 >
                   Se connecter
@@ -405,7 +506,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
                 Vous n'avez pas encore de compte ?{' '}
                 <button
                   type="button"
-                  onClick={() => onSwitchMode('register')}
+                  onClick={() => handleModeSwitch('register')}
                   className="font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer ml-1"
                 >
                   Créer un compte
@@ -417,7 +518,7 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
               <p>
                 <button
                   type="button"
-                  onClick={() => onSwitchMode('login')}
+                  onClick={() => handleModeSwitch('login')}
                   className="font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
                 >
                   ← Revenir à la connexion
@@ -430,3 +531,4 @@ export const AuthModalOrView: React.FC<AuthViewProps> = ({
     </div>
   );
 };
+

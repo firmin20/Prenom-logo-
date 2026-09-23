@@ -5,6 +5,8 @@ import {
   db,
   googleProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   fbSignOut,
@@ -18,6 +20,7 @@ import {
   deleteDoc,
 } from '../services/firebase';
 import { UserProfile, SavedLogoItem, LogoConcept, PlanType } from '../types';
+import { mapFirebaseAuthError } from '../utils/authErrors';
 
 interface AuthContextType {
   user: User | null;
@@ -66,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserProfile(data);
       } else {
         const nameParts = (firebaseUser.displayName || '').trim().split(' ');
-        const derivedFirst = extraName?.firstName || nameParts[0] || 'Utilisateur';
+        const derivedFirst = extraName?.firstName || nameParts[0] || 'Créateur';
         const derivedLast = extraName?.lastName || nameParts.slice(1).join(' ') || '';
 
         const newProfile: UserProfile = {
@@ -79,7 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           generationsCount: 0,
         };
 
-        await setDoc(userRef, newProfile);
+        // Use { merge: true } to guarantee non-destructive profile creation
+        await setDoc(userRef, newProfile, { merge: true });
         setUserProfile(newProfile);
       }
     } catch (err: any) {
@@ -87,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback local representation if network issue
       setUserProfile({
         userId: firebaseUser.uid,
-        firstName: extraName?.firstName || firebaseUser.displayName || 'Utilisateur',
+        firstName: extraName?.firstName || firebaseUser.displayName || 'Créateur',
         lastName: extraName?.lastName || '',
         email: firebaseUser.email || '',
         plan: 'free',
@@ -123,8 +127,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Auth state listener
+  // Auth state listener & redirect handler
   useEffect(() => {
+    // Process redirect results from mobile browsers
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user) {
+          await fetchOrCreateUserProfile(result.user);
+          await loadUserLogos(result.user.uid);
+        }
+      })
+      .catch((err) => {
+        console.warn('Redirect auth result info:', err);
+        const mapped = mapFirebaseAuthError(err);
+        setAuthError(mapped);
+      });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -149,23 +167,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ) => {
     setAuthError(null);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const cleanEmail = email.trim();
+      const cleanFirst = firstName.trim();
+      const cleanLast = lastName.trim();
+
+      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       await updateProfile(cred.user, {
-        displayName: `${firstName} ${lastName}`.trim(),
+        displayName: `${cleanFirst} ${cleanLast}`.trim(),
       });
-      await fetchOrCreateUserProfile(cred.user, { firstName, lastName });
+      await fetchOrCreateUserProfile(cred.user, { firstName: cleanFirst, lastName: cleanLast });
     } catch (err: any) {
       console.error('Sign up error:', err);
-      let msg = 'Une erreur est survenue lors de la création de compte.';
-      if (err.code === 'auth/email-already-in-use') {
-        msg = 'Cette adresse e-mail est déjà associée à un compte.';
-      } else if (err.code === 'auth/weak-password') {
-        msg = 'Le mot de passe doit contenir au moins 6 caractères.';
-      } else if (err.code === 'auth/invalid-email') {
-        msg = 'Adresse e-mail invalide.';
-      }
-      setAuthError(msg);
-      throw new Error(msg);
+      const mapped = mapFirebaseAuthError(err);
+      setAuthError(mapped);
+      throw new Error(mapped);
     }
   };
 
@@ -173,23 +188,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithEmail = async (email: string, password: string) => {
     setAuthError(null);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const cleanEmail = email.trim();
+      const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
       await fetchOrCreateUserProfile(cred.user);
       await loadUserLogos(cred.user.uid);
     } catch (err: any) {
       console.error('Sign in error:', err);
-      let msg = 'Identifiants invalides.';
-      if (
-        err.code === 'auth/user-not-found' ||
-        err.code === 'auth/wrong-password' ||
-        err.code === 'auth/invalid-credential'
-      ) {
-        msg = 'Adresse e-mail ou mot de passe incorrect.';
-      } else if (err.code === 'auth/too-many-requests') {
-        msg = 'Trop de tentatives infructueuses. Veuillez patienter.';
-      }
-      setAuthError(msg);
-      throw new Error(msg);
+      const mapped = mapFirebaseAuthError(err);
+      setAuthError(mapped);
+      throw new Error(mapped);
     }
   };
 
@@ -202,21 +209,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await loadUserLogos(cred.user.uid);
     } catch (err: any) {
       console.error('Google Sign In error:', err);
-      let errorMsg = 'La connexion avec Google a échoué.';
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'votre domaine';
-      if (err?.code === 'auth/unauthorized-domain') {
-        errorMsg = `Le domaine (${currentHost}) n'est pas encore ajouté aux « Domaines autorisés » dans Firebase. En attendant, connectez-vous directement via l'e-mail ci-dessous.`;
-      } else if (err?.code === 'auth/popup-blocked') {
-        errorMsg = 'La popup Google a été bloquée par le navigateur mobile. Utilisez l\'e-mail ci-dessous.';
-      } else if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
-        errorMsg = 'La fenêtre de connexion Google a été fermée. Vous pouvez réessayer ou utiliser l\'e-mail.';
-      } else if (err?.code === 'auth/operation-not-allowed') {
-        errorMsg = 'Le fournisseur Google n\'est pas actif dans Firebase. Utilisez l\'e-mail ci-dessous.';
-      } else if (err?.message) {
-        errorMsg = `Erreur Google (${err.code || 'OAuth'}) : ${err.message}`;
+      // Fallback to redirect if popup blocked on mobile
+      if (err?.code === 'auth/popup-blocked') {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr: any) {
+          const mapped = mapFirebaseAuthError(redirectErr);
+          setAuthError(mapped);
+          throw new Error(mapped);
+        }
       }
-      setAuthError(errorMsg);
-      throw new Error(errorMsg);
+      const mapped = mapFirebaseAuthError(err);
+      setAuthError(mapped);
+      throw new Error(mapped);
     }
   };
 
@@ -224,15 +230,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendPasswordReset = async (email: string) => {
     setAuthError(null);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim());
     } catch (err: any) {
       console.error('Password reset error:', err);
-      let msg = 'Impossible d’envoyer le lien de réinitialisation.';
-      if (err.code === 'auth/user-not-found') {
-        msg = 'Aucun compte associé à cette adresse e-mail.';
-      }
-      setAuthError(msg);
-      throw new Error(msg);
+      const mapped = mapFirebaseAuthError(err);
+      setAuthError(mapped);
+      throw new Error(mapped);
     }
   };
 
